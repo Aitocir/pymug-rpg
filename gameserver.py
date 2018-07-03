@@ -195,10 +195,40 @@ class PymugServer:
     
     def load_recipes_from_string(self, items_str):
         try:
-            items = json.loads(items_str)
-            #  TODO: build real recipe objects
-            #  they look different than what the designer provides
-            r.db('definitions').table('recipes').insert(items).run(self._c)
+            recipes = []
+            bad_recipe_count = 0
+            recipe_defs = json.loads(items_str)
+            for r in recipe_defs:
+                recipe = {}
+                recipe['itemrefs'] = [x[0] for x in ingredients]
+                recipe['constants'] = r['specific-ingredients'] if 'specific-ingredients' in r else {}
+                recipe['variables'] = r['typed-ingredients'] if 'typed-ingredients' in r else {}
+                recipe['tool'] = r['tool'] if 'tool' in r else '' 
+                if recipe['constants']=={} and recipe['variables']=={} and recipe['tool']=='':
+                    bad_recipe_count += 1
+                    continue
+                recipe['success'] = r['success'] if 'success' in r else {}
+                recipe['failure'] = r['failure'] if 'failure' in r else {}
+                recipe['success_xp'] = r['success_xp'] if 'success_xp' in r else {}
+                recipe['failure_xp'] = r['failure_xp'] if 'failure_xp' in r else {}
+                recipe['random'] = r['random'] if 'random' in r and 0.0<r['random']<1.0 else 1.0
+                if 'skill' not in r:
+                    recipe['skill_name'] = ''
+                else:
+                    try:
+                        recipe['skill_name'] = r['skill']['name']
+                        base = (r['skill']['first_level'] if 'min' in r['skill'] else 0) - 1
+                        mastery = r['skill']['mastery_level'] if 'mastery' in r['skill'] else base+1
+                        recipe['skill_base'] = base
+                        recipe['skill_steps'] = mastery - base
+                        recipe['skill_curve'] = r['skill']['curve'] if 'curve' in r['skill'] else 1.0
+                    except:
+                        bad_recipe_count += 1
+                        continue
+                recipes.append(recipe)
+            if bad_recipe_count:
+                print('Failed to load {0} out of {1} recipes because of missing values'.format(bad_recipe_count, bad_recipe_count+len(recipes)))
+            r.db('definitions').table('recipes').insert(recipes).run(self._c)
         except:
             #  TODO: differentiate between JSON format and db write exceptions
             raise ValueError('Invalid JSON provided for recipes')
