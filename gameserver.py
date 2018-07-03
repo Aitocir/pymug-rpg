@@ -128,6 +128,7 @@ class PymugServer:
             r.db_create('components').run(self._c)
         
         db_comps = set(r.db('components').table_list().run(self._c))
+        components.extend(['inventory', 'skills'])  #  TODO: add any component tables defined by default by pymug-rpg the designer gets for free
         for x in set(components).difference(db_comps):
             r.db('components').table_create(x, primary_key='entity').run(self._c)
         
@@ -136,8 +137,8 @@ class PymugServer:
         db_defs = set(r.db('definitions').table_list().run(self._c))
         if 'itembases' not in db_defs:
             r.db('definitions').table_create('itembases', primary_key='name').run(self._c)
-        if 'itemadjectives' not in db_defs:
-            r.db('definitions').table_create('itemadjectives', primary_key='id').run(self._c)
+        if 'itemmodifiers' not in db_defs:
+            r.db('definitions').table_create('itemmodifiers', primary_key='id').run(self._c)
             r.db('definitions').table('itemadjectives').index_create('name').run(conn)
         if 'recipes' not in db_defs:
             r.db('definitions').table_create('recipes', primary_key='name').run(self._c)
@@ -221,7 +222,7 @@ class PymugServer:
                         mastery = r['skill']['mastery_level'] if 'mastery' in r['skill'] else base+1
                         recipe['skill_base'] = base
                         recipe['skill_steps'] = mastery - base
-                        recipe['skill_curve'] = r['skill']['curve'] if 'curve' in r['skill'] else 1.0
+                        recipe['skill_curve'] = r['skill']['difficulty'] if 'curve' in r['skill'] else 1.0
                     except:
                         bad_recipe_count += 1
                         continue
@@ -249,6 +250,7 @@ class PymugServer:
             dirs = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isdir(os.path.join(items_dir, x))]
             for d in dirs:
                 self.load_recipes_from_dir(d, True)
+
     """
     def add_to_db(self, db, table, obj):
         #  This function will not overwrite existing data
