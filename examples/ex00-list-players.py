@@ -53,5 +53,5 @@ if __name__ == '__main__':
     server.override_system_command('logged-out', goodbye_player)
     
     #
-    server.init_db(['status'])
+    server.init_db(components=['status'])
     server.run()

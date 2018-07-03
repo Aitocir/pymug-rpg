@@ -117,23 +117,113 @@ class PymugServer:
     #  magick time
     #
     
-    def init_db_with_ecs_components(self, components=[]):
+    def init_db(self, components=[]):
         self._c = r.connect(self._db_host, self._db_port)
         
         dbs = r.db_list().run(self._c)
         if 'login' not in dbs:
             r.db_create('login').run(self._c)
             r.db('login').table_create('registrations', primary_key='username').run(self._c)
-        if 'game' not in dbs:
-            r.db_create('game').run(self._c)
+        if 'components' not in dbs:
+            r.db_create('components').run(self._c)
         
-        db_comps = set(r.db('game').table_list().run(self._c))
+        db_comps = set(r.db('components').table_list().run(self._c))
         for x in set(components).difference(db_comps):
-            r.db('game').table_create(x, primary_key='entity').run(self._c)
+            r.db('components').table_create(x, primary_key='entity').run(self._c)
+        
+        if 'definitions' not in dbs:
+            r.db_create('definitions').run(self._c)
+        db_defs = set(r.db('definitions').table_list().run(self._c))
+        if 'itembases' not in db_defs:
+            r.db('definitions').table_create('itembases', primary_key='name').run(self._c)
+        if 'itemadjectives' not in db_defs:
+            r.db('definitions').table_create('itemadjectives', primary_key='id').run(self._c)
+            r.db('definitions').table('itemadjectives').index_create('name').run(conn)
+        if 'recipes' not in db_defs:
+            r.db('definitions').table_create('recipes', primary_key='name').run(self._c)
+            r.db('definitions').table('recipes').index_create('tool').run(conn)
     
+    def load_item_bases_from_string(self, items_str):
+        try:
+            items = json.loads(items_str)
+            r.db('definitions').table('itembases').insert(items).run(self._c)
+        except:
+            #  TODO: differentiate between JSON format and db write exceptions
+            raise ValueError('Invalid JSON provided for item bases')
+    
+    def load_item_bases_from_file(self, items_file):
+        try:
+            with open(items_file, 'r') as f:
+                self.load_item_bases_from_string(f.read())
+        except:
+            #  TODO: differentiate between JSON format and file IO exceptions
+            raise ValueError('File {0} contains invalid item base JSON'.format(items_file))
+    
+    def load_item_bases_from_dir(self, items_dir, recursive=False):
+        files = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isfile(os.path.join(items_dir, x))]
+        for f in files:
+            self.load_item_bases_from_file(f)
+        if recursive:
+            dirs = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isdir(os.path.join(items_dir, x))]
+            for d in dirs:
+                self.load_item_bases_from_dir(d, True)
+    
+    def load_item_modifiers_from_string(self, items_str):
+        try:
+            items = json.loads(items_str)
+            r.db('definitions').table('itemmodifiers').insert(items).run(self._c)
+        except:
+            #  TODO: differentiate between JSON format and db write exceptions
+            raise ValueError('Invalid JSON provided for item modifiers')
+    
+    def load_item_modifiers_from_file(self, items_file):
+        try:
+            with open(items_file, 'r') as f:
+                self.load_item_modifiers_from_string(f.read())
+        except:
+            #  TODO: differentiate between JSON format and file IO exceptions
+            raise ValueError('File {0} contains invalid item modifier JSON'.format(items_file))
+    
+    def load_item_modifiers_from_dir(self, items_dir, recursive=False):
+        files = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isfile(os.path.join(items_dir, x))]
+        for f in files:
+            self.load_item_modifiers_from_file(f)
+        if recursive:
+            dirs = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isdir(os.path.join(items_dir, x))]
+            for d in dirs:
+                self.load_item_modifiers_from_dir(d, True)
+    
+    def load_recipes_from_string(self, items_str):
+        try:
+            items = json.loads(items_str)
+            #  TODO: build real recipe objects
+            #  they look different than what the designer provides
+            r.db('definitions').table('recipes').insert(items).run(self._c)
+        except:
+            #  TODO: differentiate between JSON format and db write exceptions
+            raise ValueError('Invalid JSON provided for recipes')
+    
+    def load_recipes_from_file(self, items_file):
+        try:
+            with open(items_file, 'r') as f:
+                self.load_recipes_from_string(f.read())
+        except:
+            #  TODO: differentiate between JSON format and file IO exceptions
+            raise ValueError('File {0} contains invalid recipe JSON'.format(items_file))
+    
+    def load_recipes_from_dir(self, items_dir, recursive=False):
+        files = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isfile(os.path.join(items_dir, x))]
+        for f in files:
+            self.load_recipes_from_file(f)
+        if recursive:
+            dirs = [os.path.join(items_dir, x) for x in os.listdir(items_dir) if os.path.isdir(os.path.join(items_dir, x))]
+            for d in dirs:
+                self.load_recipes_from_dir(d, True)
+    """
     def add_to_db(self, db, table, obj):
         #  This function will not overwrite existing data
         r.db(db).table(table).insert(obj, conflict=lambda id, old_doc, newdoc: old_doc).run(self._c)
+    """
     
     def run(self, debug=False):
         if self._c != None:

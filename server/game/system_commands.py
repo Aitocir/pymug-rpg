@@ -9,7 +9,7 @@ def _init(username, db, messenger):
 def _login(username, db, messenger):
     #  This event is triggered when a player logs in
     #  convenient signal for sending welcome messages, server announcements, etc.
-    return [messenger.plain_text('Welcome to this generic pymug server, {0}!'.format(username), username)]
+    return [messenger.plain_text('Welcome to this generic pymug-rpg server, {0}!'.format(username), username)]
 
 def _logout(username, db, messenger):
     #  This event is triggered when a player logs out (gracefully or not)
