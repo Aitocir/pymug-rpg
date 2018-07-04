@@ -201,7 +201,7 @@ class PymugServer:
             recipe_defs = json.loads(items_str)
             for r in recipe_defs:
                 recipe = {}
-                recipe['itemrefs'] = [x[0] for x in ingredients]
+                recipe['name'] = r['name']
                 recipe['constants'] = r['specific-ingredients'] if 'specific-ingredients' in r else {}
                 recipe['variables'] = r['typed-ingredients'] if 'typed-ingredients' in r else {}
                 recipe['tool'] = r['tool'] if 'tool' in r else '' 

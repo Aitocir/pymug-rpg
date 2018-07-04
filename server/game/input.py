@@ -9,11 +9,12 @@ def process_typed_input(q, q_output, player_commands, system_commands, db, messe
             if not messenger.is_plain_text(task):
                 raise ValueError('Non-plain-text message passed to typed input processor')
             username = messenger.dest(task)
-            terms = messenger.payload(task).strip().split()
+            payload = messenger.payload(task)
+            terms = payload.strip().split()
             if len(terms) == 0:
                 continue
             if terms[0] in player_commands:
-                output_messages = player_commands[terms[0]](username, db, messenger, terms)
+                output_messages = player_commands[terms[0]](username, db, messenger, payload[len(terms[0]):].strip())
                 for m in output_messages:
                     q_output.put(m)
             else:

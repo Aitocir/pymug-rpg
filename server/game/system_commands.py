@@ -1,5 +1,5 @@
 #  system command definitions
-#  all functions should return lists of (username, message) tuples
+#  all functions should return lists of messages
 
 def _init(username, db, messenger):
     #  This event is triggered when a player is first registered
